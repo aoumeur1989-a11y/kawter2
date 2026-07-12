@@ -1,0 +1,71 @@
+import streamlit as st
+import pandas as pd
+
+st.set_page_config(page_title="Détection de surchauffe des bus", layout="wide")
+
+st.title("🚍 Détection du risque de surchauffe des bus")
+st.write("Simulation - Bus circulant à Oran pendant le mois de juin")
+
+# Données fictives
+data = {
+    "Bus": ["B01","B02","B03","B04","B05","B06","B07","B08"],
+    "Temp_Ext": [33,36,39,35,41,38,34,40],
+    "Temp_Moteur": [88,95,108,92,115,104,90,111],
+    "Vitesse": [45,30,25,50,20,35,40,18],
+    "Climatisation": ["ON","ON","ON","OFF","ON","ON","OFF","ON"],
+    "Charge": [70,95,100,60,105,90,55,110]
+}
+
+df = pd.DataFrame(data)
+
+# Fonction de détection
+def detecter_surchauffe(ligne):
+    score = 0
+
+    if ligne["Temp_Ext"] >= 38:
+        score += 1
+
+    if ligne["Temp_Moteur"] >= 105:
+        score += 2
+
+    if ligne["Charge"] >= 90:
+        score += 1
+
+    if ligne["Vitesse"] < 30:
+        score += 1
+
+    if ligne["Climatisation"] == "ON":
+        score += 1
+
+    if score >= 4:
+        return "🔴 RISQUE ÉLEVÉ"
+    else:
+        return "🟢 Normal"
+
+# Analyse
+df["Etat"] = df.apply(detecter_surchauffe, axis=1)
+
+st.subheader("Résultats de l'analyse")
+st.dataframe(df, use_container_width=True)
+
+# Afficher uniquement les bus en risque
+bus_risque = df[df["Etat"] == "🔴 RISQUE ÉLEVÉ"]
+
+st.subheader("Bus nécessitant une intervention")
+
+if len(bus_risque) > 0:
+    st.error(f"{len(bus_risque)} bus présentent un risque de surchauffe.")
+    st.dataframe(bus_risque, use_container_width=True)
+else:
+    st.success("Aucun risque de surchauffe détecté.")
+
+# Statistiques
+st.subheader("Statistiques")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("Nombre total de bus", len(df))
+
+with col2:
+    st.metric("Bus à risque", len(bus_risque))
